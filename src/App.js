@@ -4,9 +4,12 @@ import Node from './Node';
 import {randomBrick} from './brick.js'
 import {GameScore} from './gameScore.js'
 import {SetTimeOut} from './SetTimeOut.js'
+import Button from '@mui/material/Button';
 
 const numRows = 20;
 const numCollums = 10;
+const numRowsNext = 5
+const numCollumsNext = 5
 
 function App() {
   const [grid, setGrid] = useState(() => {
@@ -26,7 +29,22 @@ function App() {
     return rows
   })
 
-  const [gameOver, setGameOver, score, setScore, level, setLevel] = GameScore()
+  const [nextBoard, setNextBoard] = useState(() => {
+    const rows = []
+    for (let i = 0; i < numRowsNext; i++) {
+      const currentRow = []
+      for (let j = 0; j < numCollumsNext; j++) {
+        const node = {
+          type: false,
+          color: "#c3d4f9"
+        }
+      currentRow.push(node)
+      }
+    rows.push(currentRow)
+    }
+    return rows
+  })
+
   const [player, setPlayer] = useState({
     position: {x: numCollums/2 - 2, y: 0},
     brick: null,
@@ -34,7 +52,8 @@ function App() {
     color: null
   })
   const [fullRows, setFullRows] = useState(0)
-  const [time, setTime] = useState(null)
+  const [score, setScore, level, setLevel, 
+    gameOver, setGameOver, rowCleared, setRowCleared] = GameScore(fullRows)
 
   const resetPlayer = useCallback(async() => {
     const tetromino = await randomBrick()
@@ -59,6 +78,8 @@ function App() {
 
 
   const clearRow = () => {
+    setFullRows(0)
+    let rowResult = 0
     for (let i = 0; i < numRows; i++){
       let isFilled = true
       for (let j = 0; j <numCollums; j++) {
@@ -67,6 +88,7 @@ function App() {
         }
       }
       if (isFilled === true) {
+        rowResult += 1
         //clear fullRow
         for (let j = 0; j <numCollums; j++) {
           grid[i][j]['status'] = 'clear'
@@ -89,14 +111,15 @@ function App() {
         }
 
       setScore(state => state += 10)
+      setFullRows(rowResult)
       }
     }
   }
 
   useEffect(() => {
-    //clear full rows
-    setFullRows(0)
-
+    if (gameOver === true) {
+      alert(`GAME OVER!\r\nSCORE: ${score}`);
+    }
     //remove pre terminos
     const updateState = [...grid]
       grid.map((rows, i) => 
@@ -140,9 +163,10 @@ function App() {
     resetStage()
     resetPlayer()
     setGameOver(false)
-    setTime(1000)
     setFullRows(0);
     setScore(0);
+    setLevel(0);
+    setRowCleared(0)
   }
 
   const updatePos = ({x, y, collided}) => {
@@ -195,7 +219,7 @@ function App() {
 
   SetTimeOut(() => {
     dropPlayer();
-  }, time)
+  }, 1000 / (level+1) + 200)
 
   const rotate = async(matrix) => {
       const rotatedMatrix = await matrix[0].map((val, index) => 
@@ -244,15 +268,17 @@ function App() {
   }
     
   return (
-    <div className="App"
+    <div className="Tetris"
       role="button"
       tabIndex="0"
       onKeyDown={e => playerInput(e)}>
+      
+    <div className='gameScreen'>
 
-      <div className="board"
+      <div className="left"
       style = {{
         display: "grid",
-        gridTemplateColumns: `repeat(${numCollums}, 30px)`
+        gridTemplateColumns: `repeat(${numCollums}, 30px)`,
       }}
       >
         {grid.map((rows, i) => 
@@ -270,8 +296,35 @@ function App() {
         )}
       </div>
 
-    <button onClick={() => {start()}}>Start</button>
-    <div>SCORE: {score} </div>
+      <div className='right' >
+        <button className="button" onClick={() => {start()}}>Start</button>
+        <div className="child">SCORE: {score} </div>
+        <div className="child">ROWS: {rowCleared} </div>
+        <div className="child">LEVEL: {level}</div>
+
+
+      <div className="nextBoard"
+      style = {{
+        display: "grid",
+        gridTemplateColumns: `repeat(${numCollumsNext}, 30px)`,
+      }}
+      >
+        {nextBoard.map((rows, i) => 
+          rows.map((node, j) => {
+            const {type, color} = node;
+            return (
+              <div className='node'>
+                <Node 
+                  type = {type}
+                  color = {color}
+                />
+              </div>
+            )
+          })
+        )}
+      </div>
+      </div>
+    </div>
     </div>
   );
 }
