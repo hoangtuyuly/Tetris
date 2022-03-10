@@ -1,10 +1,10 @@
 import './App.css';
 import React, {useState, useCallback, useEffect} from 'react'
 import Node from './Node';
+import Node2 from './Node2';
 import {randomBrick} from './brick.js'
 import {GameScore} from './gameScore.js'
 import {SetTimeOut} from './SetTimeOut.js'
-import Button from '@mui/material/Button';
 
 const numRows = 20;
 const numCollums = 10;
@@ -36,7 +36,7 @@ function App() {
       for (let j = 0; j < numCollumsNext; j++) {
         const node = {
           type: false,
-          color: "#c3d4f9"
+          color: "#B0E0E6"
         }
       currentRow.push(node)
       }
@@ -51,19 +51,43 @@ function App() {
     collided: false,
     color: null
   })
+
   const [fullRows, setFullRows] = useState(0)
+  const [brickMemo, setBrickMemo] = useState({
+    position: {x: 1, y: 1},
+    brick: null,
+    color: null
+  })
+
   const [score, setScore, level, setLevel, 
     gameOver, setGameOver, rowCleared, setRowCleared] = GameScore(fullRows)
 
-  const resetPlayer = useCallback(async() => {
-    const tetromino = await randomBrick()
-    setPlayer({
-      position: {x: numCollums/2 - 2, y: 0},
-      brick: tetromino.shape,
-      collided: false,
-      color: tetromino.color
+  const resetPlayer = async() => {
+    if (brickMemo.brick !== null) {
+      setPlayer({
+        position: {x: numCollums/2 - 2, y: 0},
+        brick: brickMemo.brick,
+        collided: false,
+        color: brickMemo.color
+      })
+    } else {
+      const tetromino = await randomBrick()
+      setPlayer({
+        position: {x: numCollums/2 - 2, y: 0},
+        brick: tetromino.shape,
+        collided: false,
+        color: tetromino.color
+      })}
+  }
+
+  const resestBrickMemo = async() => {
+    const tetrominoMemo = await randomBrick()
+    setBrickMemo({  
+      position: {x: 1, y: 1},
+      brick: tetrominoMemo.shape,
+      color: tetrominoMemo.color
     })
-  }, [])
+  }
 
   const resetStage = () => {
     const newGrid = [...grid]
@@ -75,6 +99,29 @@ function App() {
       )))
     setGrid(newGrid)
   }
+
+  useEffect(() => {
+    if (brickMemo.brick !== null) {
+    const updateState = [...nextBoard]
+      nextBoard.map((rows, i) => 
+        rows.map((node, j) => {
+          nextBoard[i][j]['type'] = false
+          nextBoard[i][j]['color'] = "#B0E0E6"
+        }
+      ))
+
+      brickMemo.brick.forEach((row, i) => {
+      row.forEach((node, j) => {
+        if (node !== 0) {
+          const x_coor = j + brickMemo.position.x
+          const y_coor = i + brickMemo.position.y
+          nextBoard[y_coor][x_coor]['type'] = true
+          nextBoard[y_coor][x_coor]['color'] = brickMemo.color
+        }
+      })
+      setNextBoard(updateState);
+    })}
+  }, [brickMemo])
 
 
   const clearRow = () => {
@@ -109,14 +156,12 @@ function App() {
             grid[0][y]['color'] = "#c3d4f9"
           }
         }
-
-      setScore(state => state += 10)
-      setFullRows(rowResult)
       }
     }
+    setFullRows(rowResult)
   }
 
-  useEffect(() => {
+  useEffect(async() => {
     if (gameOver === true) {
       alert(`GAME OVER!\r\nSCORE: ${score}`);
     }
@@ -148,6 +193,7 @@ function App() {
     })}
 
     if (player.collided === true) {
+      await resestBrickMemo()
       resetPlayer()
       clearRow()
     }
@@ -159,7 +205,21 @@ function App() {
       player.brick,
       player.collided])
 
-  const start = async() => {
+  const start = () => {
+    setBrickMemo({
+      position: {x: 1, y: 1},
+      brick: null,
+      color: null
+    })
+
+    setPlayer({  
+        position: {x: numCollums/2 - 2, y: 0},
+        brick: null,
+        collided: false,
+        color: null
+    })
+
+    resestBrickMemo()
     resetStage()
     resetPlayer()
     setGameOver(false)
@@ -301,8 +361,7 @@ function App() {
         <div className="child">SCORE: {score} </div>
         <div className="child">ROWS: {rowCleared} </div>
         <div className="child">LEVEL: {level}</div>
-
-
+        
       <div className="nextBoard"
       style = {{
         display: "grid",
@@ -313,8 +372,8 @@ function App() {
           rows.map((node, j) => {
             const {type, color} = node;
             return (
-              <div className='node'>
-                <Node 
+              <div className='node2'>
+                <Node2 
                   type = {type}
                   color = {color}
                 />

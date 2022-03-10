@@ -12,7 +12,7 @@ export const GameScore = (fullRows) => {
         if (fullRows > 0)
             setScore(state => state += point[fullRows - 1]*(level + 1))
             setRowCleared(state => state += fullRows)
-            setLevel(Math.floor(rowCleared / 3))
+            setLevel(Math.floor(rowCleared / 6))
     }, [level, point, fullRows])
     
     useEffect(() => {
